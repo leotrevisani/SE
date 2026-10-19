@@ -1,0 +1,50 @@
+#include <WiFi.h>
+#include <HTTPClient.h>
+
+//COLAR O WRITE DO THINGSPEAK
+//SEM O VALOR DEPOIS DO =
+const char* api = "https://api.thingspeak.com/update?api_key=3KGL9TQX0IZAISKK&field1=";
+
+float ultimoValor = -999;
+
+//Envia a informação do esp32 para o thingspeak
+void SendData(int value)
+{
+  if(WiFi.status() != WL_CONNECTED)
+  {
+    Serial.write("Nao tenho internet");
+    return;
+  }
+
+  String url = String(api) + String(value);
+
+  HTTPClient http;
+  http.begin(url);
+  http.GET();
+  http.end();
+}
+
+void setup() {
+  Serial.begin(115200);
+  WiFi.begin("Wokwi-GUEST", "", 6);
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(100);
+    Serial.print(".");
+  }
+  Serial.println(" Connected!");
+  
+}
+
+void loop() {
+  const float BETA = 3950;
+  int analogValue = analogRead(13);
+  float celsius = 1 / (log(1 / (4095.0 / analogValue - 1)) / BETA + 1.0 / 298.15) - 273.15;
+  Serial.println(celsius);
+  if (celsius != ultimoValor){
+    SendData(celsius);
+
+    ultimoValor = celsius;
+  }
+
+  delay(15000);
+}
